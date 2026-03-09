@@ -72,27 +72,27 @@ class ValidationView(discord.ui.View):
         if all_done:
             await interaction.channel.send("Проверка анкеты завершена.")  # type: ignore
 
-    @discord.ui.button(label="TEX ✓", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="TEX ✓", style=discord.ButtonStyle.blurple, row=0)
     async def tex_ok(self, button, interaction):
         await self._apply(interaction, "tex", True)
 
-    @discord.ui.button(label="TEX ✗", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="TEX ✗", style=discord.ButtonStyle.red, row=0)
     async def tex_no(self, button, interaction):
         await self._apply(interaction, "tex", False)
 
-    @discord.ui.button(label="LOR ✓", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="LOR ✓", style=discord.ButtonStyle.blurple, row=1)
     async def lor_ok(self, button, interaction):
         await self._apply(interaction, "lor", True)
 
-    @discord.ui.button(label="LOR ✗", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="LOR ✗", style=discord.ButtonStyle.red, row=1)
     async def lor_no(self, button, interaction):
         await self._apply(interaction, "lor", False)
 
-    @discord.ui.button(label="FIN ✓", style=discord.ButtonStyle.green)
+    @discord.ui.button(label="FIN ✓", style=discord.ButtonStyle.blurple, row=2)
     async def fin_ok(self, button, interaction):
         await self._apply(interaction, "fin", True)
 
-    @discord.ui.button(label="FIN ✗", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="FIN ✗", style=discord.ButtonStyle.red, row=2)
     async def fin_no(self, button, interaction):
         await self._apply(interaction, "fin", False)
 

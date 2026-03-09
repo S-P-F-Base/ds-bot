@@ -68,5 +68,7 @@ async def stop():
     await bot.close()
 
     if _bot_task:
+        _bot_task.cancel()
+
         with contextlib.suppress(asyncio.CancelledError):
             await _bot_task
