@@ -13,6 +13,11 @@ STAGES = {
 }
 
 
+PENDING = "Ожидает проверки"
+APPROVED = "Одобрено"
+REJECTED = "Отклонено"
+
+
 class ValidationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -34,20 +39,21 @@ class ValidationView(discord.ui.View):
         embed = msg.embeds[0]
 
         index, stage_name = STAGES[stage]
+        field = embed.fields[index]
 
-        if (
-            "Одобрено" in embed.fields[index].value
-            or "Отклонено" in embed.fields[index].value
-        ):
-            await interaction.response.send_message("Уже проверено.", ephemeral=True)
+        if APPROVED in field.value or REJECTED in field.value:
+            await interaction.response.send_message(
+                "Этот этап уже проверен.",
+                ephemeral=True,
+            )
             return
 
         ts = int(time.time())
 
         if approved:
-            value = f"Одобрено: {interaction.user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"  # type: ignore
+            value = f"{APPROVED}: {interaction.user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"  # type: ignore
         else:
-            value = f"Отклонено: {interaction.user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"  # type: ignore
+            value = f"{REJECTED}: {interaction.user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"  # type: ignore
 
         embed.set_field_at(
             index,
@@ -56,43 +62,49 @@ class ValidationView(discord.ui.View):
             inline=False,
         )
 
-        if not approved:
+        rejected = any(REJECTED in f.value for f in embed.fields)
+        approved_all = all(APPROVED in f.value for f in embed.fields)
+
+        if rejected:
             embed.colour = Colour.red()
+            self.clear_items()
 
-        all_done = all(
-            ("Ожидает проверки" not in f.value and "Отклонено" not in f.value)
-            for f in embed.fields
-        )
-
-        if all_done:
+        elif approved_all:
             embed.colour = Colour.green()
+            self.clear_items()
+
+        else:
+            embed.colour = Colour.yellow()
 
         await interaction.response.edit_message(embed=embed, view=self)
 
-        if all_done:
-            await interaction.channel.send("Проверка анкеты завершена.")  # type: ignore
+        if approved_all:
+            await interaction.channel.send("Проверка анкеты завершена")  # type: ignore
 
-    @discord.ui.button(label="TEX ✓", style=discord.ButtonStyle.blurple, row=0)
+    # TEX
+    @discord.ui.button(label="TEX ✓ ", style=discord.ButtonStyle.blurple, row=0)
     async def tex_ok(self, button, interaction):
         await self._apply(interaction, "tex", True)
 
-    @discord.ui.button(label="TEX ✗", style=discord.ButtonStyle.red, row=0)
+    @discord.ui.button(label="TEX ✗ ", style=discord.ButtonStyle.red, row=0)
     async def tex_no(self, button, interaction):
         await self._apply(interaction, "tex", False)
 
-    @discord.ui.button(label="LOR ✓", style=discord.ButtonStyle.blurple, row=1)
+    # LOR
+    @discord.ui.button(label="LOR ✓ ", style=discord.ButtonStyle.blurple, row=1)
     async def lor_ok(self, button, interaction):
         await self._apply(interaction, "lor", True)
 
-    @discord.ui.button(label="LOR ✗", style=discord.ButtonStyle.red, row=1)
+    @discord.ui.button(label="LOR ✗ ", style=discord.ButtonStyle.red, row=1)
     async def lor_no(self, button, interaction):
         await self._apply(interaction, "lor", False)
 
-    @discord.ui.button(label="FIN ✓", style=discord.ButtonStyle.blurple, row=2)
+    # FIN
+    @discord.ui.button(label="FIN ✓ ", style=discord.ButtonStyle.green, row=2)
     async def fin_ok(self, button, interaction):
         await self._apply(interaction, "fin", True)
 
-    @discord.ui.button(label="FIN ✗", style=discord.ButtonStyle.red, row=2)
+    @discord.ui.button(label="FIN ✗ ", style=discord.ButtonStyle.red, row=2)
     async def fin_no(self, button, interaction):
         await self._apply(interaction, "fin", False)
 
@@ -104,29 +116,29 @@ class ValidationCog(commands.Cog):
     def build_embed(self) -> Embed:
         embed = Embed(
             title="Проверка анкеты",
-            colour=Colour.red(),
+            colour=Colour.yellow(),
             timestamp=discord.utils.utcnow(),
         )
 
         embed.add_field(
             name="Техническая часть",
-            value="Ожидает проверки",
+            value=PENDING,
             inline=False,
         )
 
         embed.add_field(
             name="Лорная часть",
-            value="Ожидает проверки",
+            value=PENDING,
             inline=False,
         )
 
         embed.add_field(
             name="Финальная часть",
-            value="Ожидает проверки",
+            value=PENDING,
             inline=False,
         )
 
-        embed.set_footer(text="Система проверки анкеты")
+        embed.set_footer(text="Время создания проверки")
 
         return embed
 
