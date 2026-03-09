@@ -36,7 +36,7 @@ class CommandsCog(commands.Cog):
             return
 
         await ctx.send(
-            "Кайн отобрал у меня доступ к базе данных...\nЯ не могу сейчас что либо сказать.",
+            "Кайн отобрал у меня доступ к базе данных...",
             file=discord.File("images/ashley/worry.png"),
         )
 

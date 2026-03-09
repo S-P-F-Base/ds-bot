@@ -8,6 +8,7 @@ from .cogs import (
     EventCog,
     ForumControlCog,
     ServerControlCog,
+    ValidationCog,
 )
 
 intents = discord.Intents.all()
@@ -21,6 +22,7 @@ async def start():
         EventCog,
         ForumControlCog,
         ServerControlCog,
+        ValidationCog,
     ]:
         bot.add_cog(cls(bot))
 
