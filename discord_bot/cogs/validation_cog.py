@@ -106,7 +106,12 @@ class ValidationView(discord.ui.View):
         elif approved_all:
             await channel.send("Анкета одобрена")  # type: ignore
 
-    @discord.ui.button(label="TEX", style=discord.ButtonStyle.green, row=0)
+    @discord.ui.button(
+        label="TEX",
+        style=discord.ButtonStyle.green,
+        row=0,
+        custom_id="validation_tex_ok",
+    )
     async def tex_ok(
         self,
         button: discord.ui.Button,
@@ -114,7 +119,12 @@ class ValidationView(discord.ui.View):
     ) -> None:
         await self._apply(interaction, "tex", True)
 
-    @discord.ui.button(label="TEX", style=discord.ButtonStyle.red, row=0)
+    @discord.ui.button(
+        label="TEX",
+        style=discord.ButtonStyle.red,
+        row=0,
+        custom_id="validation_tex_no",
+    )
     async def tex_no(
         self,
         button: discord.ui.Button,
@@ -122,7 +132,12 @@ class ValidationView(discord.ui.View):
     ) -> None:
         await self._apply(interaction, "tex", False)
 
-    @discord.ui.button(label="LOG", style=discord.ButtonStyle.green, row=1)
+    @discord.ui.button(
+        label="LOG",
+        style=discord.ButtonStyle.green,
+        row=1,
+        custom_id="validation_log_ok",
+    )
     async def log_ok(
         self,
         button: discord.ui.Button,
@@ -130,7 +145,12 @@ class ValidationView(discord.ui.View):
     ) -> None:
         await self._apply(interaction, "log", True)
 
-    @discord.ui.button(label="LOG", style=discord.ButtonStyle.red, row=1)
+    @discord.ui.button(
+        label="LOG",
+        style=discord.ButtonStyle.red,
+        row=1,
+        custom_id="validation_log_no",
+    )
     async def log_no(
         self,
         button: discord.ui.Button,
@@ -138,7 +158,12 @@ class ValidationView(discord.ui.View):
     ) -> None:
         await self._apply(interaction, "log", False)
 
-    @discord.ui.button(label="FIN", style=discord.ButtonStyle.green, row=2)
+    @discord.ui.button(
+        label="FIN",
+        style=discord.ButtonStyle.green,
+        row=2,
+        custom_id="validation_fin_ok",
+    )
     async def fin_ok(
         self,
         button: discord.ui.Button,
@@ -146,7 +171,12 @@ class ValidationView(discord.ui.View):
     ) -> None:
         await self._apply(interaction, "fin", True)
 
-    @discord.ui.button(label="FIN", style=discord.ButtonStyle.red, row=2)
+    @discord.ui.button(
+        label="FIN",
+        style=discord.ButtonStyle.red,
+        row=2,
+        custom_id="validation_fin_no",
+    )
     async def fin_no(
         self,
         button: discord.ui.Button,
