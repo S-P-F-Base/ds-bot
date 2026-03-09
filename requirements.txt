@@ -2,4 +2,4 @@ fastapi
 jinja2
 uvicorn
 httpx
-pycord
+py-cord
