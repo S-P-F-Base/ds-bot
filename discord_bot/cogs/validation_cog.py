@@ -1,3 +1,6 @@
+import time
+
+import discord
 from discord import Colour, Embed
 from discord.ext import commands
 
@@ -17,7 +20,8 @@ class ValidationCog(commands.Cog):
     def build_embed(self) -> Embed:
         embed = Embed(
             title="Проверка анкеты",
-            colour=Colour.orange(),
+            colour=Colour.red(),
+            timestamp=discord.utils.utcnow(),
         )
 
         embed.add_field(
@@ -37,6 +41,8 @@ class ValidationCog(commands.Cog):
             value="Ожидает проверки",
             inline=False,
         )
+
+        embed.set_footer(text="Система проверки анкеты")
 
         return embed
 
@@ -82,13 +88,27 @@ class ValidationCog(commands.Cog):
 
         embed = msg.embeds[0]
 
+        if "Проверено" in embed.fields[index].value:
+            await ctx.message.delete()
+            return
+
+        ts = int(time.time())
+
         embed.set_field_at(
             index,
-            name=f"{stage_name} ({stage.upper()})",
-            value=f"Проверено: {ctx.author.mention}",
+            name=stage_name,
+            value=f"Проверено: {ctx.author.mention}\n<t:{ts}:f> (<t:{ts}:R>)",
             inline=False,
         )
 
+        all_done = all("Ожидает проверки" not in field.value for field in embed.fields)
+
+        if all_done:
+            embed.colour = Colour.green()
+
         await msg.edit(embed=embed)
+
+        if all_done:
+            await ctx.channel.send("Проверка анкеты завершена.")
 
         await ctx.message.delete()
