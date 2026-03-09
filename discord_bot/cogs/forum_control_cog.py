@@ -126,7 +126,10 @@ class ForumControlCog(commands.Cog):
             return
 
         await thread.send(f"<@&{NOTIFY_ROLE_ID}>")
-        # TODO:
+
+        validation_cog = self.bot.get_cog("ValidationCog")
+        if validation_cog:
+            await validation_cog.create_validation_message(thread)  # type: ignore
 
     @commands.command(name="cleanup")
     @commands.has_permissions(manage_threads=True)

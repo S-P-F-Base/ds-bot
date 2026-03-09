@@ -65,10 +65,14 @@ async def stop():
     if bot.is_closed():
         return
 
-    await bot.close()
+    try:
+        await bot.close()
 
-    if _bot_task:
-        _bot_task.cancel()
+        if _bot_task:
+            _bot_task.cancel()
 
-        with contextlib.suppress(asyncio.CancelledError):
-            await _bot_task
+            with contextlib.suppress(asyncio.CancelledError):
+                await _bot_task
+
+    except RuntimeError:
+        pass

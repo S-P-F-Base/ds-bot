@@ -4,7 +4,7 @@ import discord
 from discord import Colour, Embed
 from discord.ext import commands
 
-from .etc import ALLOWED_ROLES
+from .etc import VALIDATION_ALLOWED_ROLES
 
 STAGES = {
     "tex": (0, "Техническая часть"),
@@ -28,7 +28,7 @@ class ValidationView(discord.ui.View):
         stage: str,
         approved: bool,
     ):
-        if not any(r.id in ALLOWED_ROLES for r in interaction.user.roles):  # type: ignore
+        if not any(r.id in VALIDATION_ALLOWED_ROLES for r in interaction.user.roles):  # type: ignore
             await interaction.response.send_message("Нет прав.", ephemeral=True)
             return
 
@@ -145,12 +145,15 @@ class ValidationCog(commands.Cog):
 
     @commands.command(name="validation")
     async def create_validation(self, ctx: commands.Context):
-        if not any(r.id in ALLOWED_ROLES for r in ctx.author.roles):  # type: ignore
+        if not any(r.id in VALIDATION_ALLOWED_ROLES for r in ctx.author.roles):  # type: ignore
             return
 
+        await self.create_validation_message(ctx.channel)
+
+    async def create_validation_message(self, channel: discord.abc.Messageable):
         embed = self.build_embed()
 
-        await ctx.send(
+        await channel.send(
             embed=embed,
             view=ValidationView(),
         )
