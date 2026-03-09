@@ -76,6 +76,7 @@ class CommandsCog(commands.Cog):
                 [
                     "`!server <start|stop|restart|status>` - Управление сервером",
                     "`!cleanup` - Чистка мусора с анкет",
+                    "`!validation` - Создать форму валидации",
                 ]
             ),
             inline=False,
