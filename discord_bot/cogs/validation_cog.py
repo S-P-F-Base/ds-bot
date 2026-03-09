@@ -8,7 +8,7 @@ from .etc import VALIDATION_ALLOWED_ROLES
 
 STAGES = {
     "tex": (0, "Техническая часть"),
-    "lor": (1, "Логическая часть"),
+    "log": (1, "Логическая часть"),
     "fin": (2, "Финальная часть"),
 }
 
@@ -91,14 +91,14 @@ class ValidationView(discord.ui.View):
     async def tex_no(self, button, interaction):
         await self._apply(interaction, "tex", False)
 
-    # LOR
-    @discord.ui.button(label="LOR", style=discord.ButtonStyle.green, row=1)
-    async def lor_ok(self, button, interaction):
-        await self._apply(interaction, "lor", True)
+    # LOG
+    @discord.ui.button(label="LOG", style=discord.ButtonStyle.green, row=1)
+    async def log_ok(self, button, interaction):
+        await self._apply(interaction, "log", True)
 
-    @discord.ui.button(label="LOR", style=discord.ButtonStyle.red, row=1)
-    async def lor_no(self, button, interaction):
-        await self._apply(interaction, "lor", False)
+    @discord.ui.button(label="LOG", style=discord.ButtonStyle.red, row=1)
+    async def log_no(self, button, interaction):
+        await self._apply(interaction, "log", False)
 
     # FIN
     @discord.ui.button(label="FIN", style=discord.ButtonStyle.green, row=2)
