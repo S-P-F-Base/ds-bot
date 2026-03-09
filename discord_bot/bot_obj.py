@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import os
 
 import discord
@@ -13,10 +15,26 @@ from .cogs import (
 
 intents = discord.Intents.all()
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents,
+    help_command=None,
+)
+
+_bot_task: asyncio.Task | None = None
+_cogs_loaded = False
 
 
-async def start():
+async def _run_bot():
+    await bot.start(os.environ["discord_bot"])
+
+
+def _load_cogs():
+    global _cogs_loaded
+
+    if _cogs_loaded:
+        return
+
     for cls in [
         CommandsCog,
         EventCog,
@@ -26,8 +44,29 @@ async def start():
     ]:
         bot.add_cog(cls(bot))
 
-    await bot.start(os.environ["discord_bot"])
+    _cogs_loaded = True
+
+
+async def start():
+    global _bot_task
+
+    _load_cogs()
+
+    if _bot_task and not _bot_task.done():
+        return
+
+    loop = asyncio.get_running_loop()
+    _bot_task = loop.create_task(_run_bot())
 
 
 async def stop():
+    global _bot_task
+
+    if bot.is_closed():
+        return
+
     await bot.close()
+
+    if _bot_task:
+        with contextlib.suppress(asyncio.CancelledError):
+            await _bot_task

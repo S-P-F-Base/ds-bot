@@ -88,7 +88,7 @@ class ValidationCog(commands.Cog):
 
         embed = msg.embeds[0]
 
-        if "Проверено" in embed.fields[index].value:
+        if "Одобрено" in embed.fields[index].value:
             await ctx.message.delete()
             return
 
@@ -97,7 +97,7 @@ class ValidationCog(commands.Cog):
         embed.set_field_at(
             index,
             name=stage_name,
-            value=f"Проверено: {ctx.author.mention}\n<t:{ts}:f> (<t:{ts}:R>)",
+            value=f"Одобрено: {ctx.author.mention}\n<t:{ts}:f> (<t:{ts}:R>)",
             inline=False,
         )
 
