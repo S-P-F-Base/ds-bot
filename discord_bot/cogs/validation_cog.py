@@ -1,4 +1,5 @@
 import time
+from typing import Protocol
 
 import discord
 from discord import Colour, Embed
@@ -6,12 +7,16 @@ from discord.ext import commands
 
 from .etc import VALIDATION_ALLOWED_ROLES
 
+
+class SendableChannel(Protocol):
+    async def send(self, *args, **kwargs): ...
+
+
 STAGES = {
     "tex": (0, "Техническая часть"),
     "log": (1, "Логическая часть"),
     "fin": (2, "Финальная часть"),
 }
-
 
 PENDING = "Ожидает проверки"
 APPROVED = "Одобрено"
@@ -22,18 +27,36 @@ class ValidationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
+    async def _reply(
+        self,
+        interaction: discord.Interaction,
+        text: str,
+        *,
+        ephemeral: bool = True,
+    ) -> None:
+        if interaction.response.is_done():
+            await interaction.followup.send(text, ephemeral=ephemeral)
+        else:
+            await interaction.response.send_message(text, ephemeral=ephemeral)
+
     async def _apply(
         self,
         interaction: discord.Interaction,
         stage: str,
         approved: bool,
-    ):
-        if not any(r.id in VALIDATION_ALLOWED_ROLES for r in interaction.user.roles):  # type: ignore
-            await interaction.response.send_message("Нет прав.", ephemeral=True)
+    ) -> None:
+        user = interaction.user
+        if not isinstance(user, discord.Member):
+            await self._reply(interaction, "Команда доступна только на сервере.")
+            return
+
+        if not any(r.id in VALIDATION_ALLOWED_ROLES for r in user.roles):
+            await self._reply(interaction, "Нет прав.")
             return
 
         msg = interaction.message
         if msg is None or not msg.embeds:
+            await self._reply(interaction, "Карточка проверки не найдена.")
             return
 
         embed = msg.embeds[0]
@@ -42,18 +65,15 @@ class ValidationView(discord.ui.View):
         field = embed.fields[index]
 
         if APPROVED in field.value or REJECTED in field.value:
-            await interaction.response.send_message(
-                "Этот этап уже проверен.",
-                ephemeral=True,
-            )
+            await self._reply(interaction, "Этот этап уже проверен.")
             return
 
         ts = int(time.time())
 
         if approved:
-            value = f"{APPROVED}: {interaction.user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"  # type: ignore
+            value = f"{APPROVED}: {user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"
         else:
-            value = f"{REJECTED}: {interaction.user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"  # type: ignore
+            value = f"{REJECTED}: {user.mention}\n<t:{ts}:f> (<t:{ts}:R>)"
 
         embed.set_field_at(
             index,
@@ -68,51 +88,77 @@ class ValidationView(discord.ui.View):
         if rejected:
             embed.colour = Colour.red()
             self.clear_items()
-            await interaction.channel.send("Анкета отклонена")  # type: ignore
-
         elif approved_all:
             embed.colour = Colour.green()
             self.clear_items()
-
         else:
             embed.colour = Colour.yellow()
 
         await interaction.response.edit_message(embed=embed, view=self)
 
-        if approved_all:
-            await interaction.channel.send("Анкета одобрена")  # type: ignore
+        channel = interaction.channel
+        if channel is None:
+            return
 
-    # TEX
+        if rejected:
+            await channel.send("Анкета отклонена")  # type: ignore
+
+        elif approved_all:
+            await channel.send("Анкета одобрена")  # type: ignore
+
     @discord.ui.button(label="TEX", style=discord.ButtonStyle.green, row=0)
-    async def tex_ok(self, button, interaction):
+    async def tex_ok(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ) -> None:
         await self._apply(interaction, "tex", True)
 
     @discord.ui.button(label="TEX", style=discord.ButtonStyle.red, row=0)
-    async def tex_no(self, button, interaction):
+    async def tex_no(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ) -> None:
         await self._apply(interaction, "tex", False)
 
-    # LOG
     @discord.ui.button(label="LOG", style=discord.ButtonStyle.green, row=1)
-    async def log_ok(self, button, interaction):
+    async def log_ok(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ) -> None:
         await self._apply(interaction, "log", True)
 
     @discord.ui.button(label="LOG", style=discord.ButtonStyle.red, row=1)
-    async def log_no(self, button, interaction):
+    async def log_no(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ) -> None:
         await self._apply(interaction, "log", False)
 
-    # FIN
     @discord.ui.button(label="FIN", style=discord.ButtonStyle.green, row=2)
-    async def fin_ok(self, button, interaction):
+    async def fin_ok(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ) -> None:
         await self._apply(interaction, "fin", True)
 
     @discord.ui.button(label="FIN", style=discord.ButtonStyle.red, row=2)
-    async def fin_no(self, button, interaction):
+    async def fin_no(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ) -> None:
         await self._apply(interaction, "fin", False)
 
 
 class ValidationCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        bot.add_view(ValidationView())
 
     def build_embed(self) -> Embed:
         embed = Embed(
@@ -140,17 +186,20 @@ class ValidationCog(commands.Cog):
         )
 
         embed.set_footer(text="Время создания проверки")
-
         return embed
 
     @commands.command(name="validation")
-    async def create_validation(self, ctx: commands.Context):
-        if not any(r.id in VALIDATION_ALLOWED_ROLES for r in ctx.author.roles):  # type: ignore
+    async def create_validation(self, ctx: commands.Context) -> None:
+        author = ctx.author
+        if not isinstance(author, discord.Member):
             return
 
-        await self.create_validation_message(ctx.channel)
+        if not any(r.id in VALIDATION_ALLOWED_ROLES for r in author.roles):
+            return
 
-    async def create_validation_message(self, channel: discord.abc.Messageable):
+        await self.create_validation_message(ctx.channel)  # type: ignore
+
+    async def create_validation_message(self, channel: SendableChannel) -> None:
         embed = self.build_embed()
 
         await channel.send(
