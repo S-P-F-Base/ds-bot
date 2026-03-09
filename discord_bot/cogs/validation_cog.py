@@ -8,7 +8,7 @@ from .etc import VALIDATION_ALLOWED_ROLES
 
 STAGES = {
     "tex": (0, "Техническая часть"),
-    "lor": (1, "Лорная часть"),
+    "lor": (1, "Логическая часть"),
     "fin": (2, "Финальная часть"),
 }
 
@@ -128,7 +128,7 @@ class ValidationCog(commands.Cog):
         )
 
         embed.add_field(
-            name="Лорная часть",
+            name="Логическая часть",
             value=PENDING,
             inline=False,
         )
