@@ -1,19 +1,19 @@
 import contextlib
-import os
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
+from discord_bot.bot_obj import start, stop
 from router.overlord_api import router as overlord_api_router
 
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
+        await start()
         yield
 
     finally:
-        pass
+        await stop()
 
 
 app = FastAPI(
@@ -23,11 +23,5 @@ app = FastAPI(
     openapi_url=None,
 )
 
-if os.getenv("FASTAPISTATIC") == "1":
-    app.mount(
-        "/static",
-        StaticFiles(directory="static"),
-        name="static",
-    )
 
 app.include_router(overlord_api_router)
