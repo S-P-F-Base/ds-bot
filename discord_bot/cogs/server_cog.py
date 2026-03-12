@@ -20,7 +20,7 @@ def has_admin_access(author: discord.Member | discord.User) -> bool:
 def server_admin_only(func):
     @wraps(func)
     async def wrapper(self, ctx: commands.Context, *args, **kwargs):
-        if has_admin_access(ctx.author):
+        if not has_admin_access(ctx.author):
             await ctx.message.add_reaction(REACTION_NO)
             return
 
