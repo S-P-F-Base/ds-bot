@@ -10,13 +10,17 @@ from data_control import ServerControl, ServerStatus
 from .etc import BOT_CHANNEL_ID, REACTION_NO, REACTION_YES
 
 
+def has_admin_access(author: discord.Member | discord.User) -> bool:
+    if not isinstance(author, discord.Member):
+        return False
+
+    return any(role.permissions.administrator for role in author.roles)
+
+
 def server_admin_only(func):
     @wraps(func)
     async def wrapper(self, ctx: commands.Context, *args, **kwargs):
-        if (
-            isinstance(ctx.author, discord.Member)
-            and ctx.author.guild_permissions.administrator
-        ):
+        if has_admin_access(ctx.author):
             await ctx.message.add_reaction(REACTION_NO)
             return
 
