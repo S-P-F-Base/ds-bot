@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import os
+import sys
 
 import discord
 from discord.ext import commands
@@ -26,7 +27,11 @@ _cogs_loaded = False
 
 
 async def _run_bot():
-    await bot.start(os.environ["discord_bot"])
+    try:
+        await bot.start(os.environ["discord_bot"])
+
+    except Exception:
+        sys.exit(1)
 
 
 def _load_cogs():
