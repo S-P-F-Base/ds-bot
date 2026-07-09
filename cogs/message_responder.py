@@ -7,7 +7,8 @@ from utils import MessageAI, logger
 
 class MessageResponder(commands.Cog):
     BOT_NAMES = frozenset({"анна", "аня", "анечка", "аннушка", "анютка", "скайнет"})
-    MAX_REFERENCE_DEPTH = 5
+    MAX_REFERENCE_DEPTH = 4
+    CONTEXT_LIMIT = 10
 
     def __init__(self, bot):
         self.bot = bot
@@ -20,12 +21,49 @@ class MessageResponder(commands.Cog):
         if not self._is_addressed_to_bot(message):
             return
 
+        if not isinstance(message.channel, discord.TextChannel):
+            return
+
         user_msg = await self._build_message_ai(message, depth=0)
 
+        context = await self._get_channel_context(
+            channel=message.channel,
+            exclude_message_id=message.id,
+            limit=self.CONTEXT_LIMIT,
+        )
+
         async with message.channel.typing():
-            response = await get_ai_response(user_msg)
+            response = await get_ai_response(user_msg, context)
 
         await self._reply_with_split(message, response, mention_author=True)
+
+    async def _get_channel_context(
+        self,
+        channel: discord.TextChannel,
+        exclude_message_id: int,
+        limit: int = 10,
+    ) -> list[MessageAI]:
+        messages = []
+        async for msg in channel.history(limit=limit * 2):
+            if msg.id == exclude_message_id:
+                continue
+
+            if len(msg.content.strip()) < 3:
+                continue
+
+            ai_msg = MessageAI(
+                owner_id=msg.author.id,
+                owner_name=msg.author.display_name,
+                message=msg.content,
+                time=msg.created_at.strftime("%d.%m %H:%M"),
+                reference=None,
+            )
+            messages.append(ai_msg)
+            if len(messages) >= limit:
+                break
+
+        messages.reverse()
+        return messages
 
     async def _build_message_ai(self, msg: discord.Message, depth: int) -> MessageAI:
         if depth >= self.MAX_REFERENCE_DEPTH:
@@ -33,6 +71,7 @@ class MessageResponder(commands.Cog):
                 owner_id=0,
                 owner_name="система",
                 message="[скрыто: слишком глубокий контекст]",
+                time=msg.created_at.strftime("%d.%m %H:%M"),
                 reference=None,
             )
 
@@ -63,6 +102,7 @@ class MessageResponder(commands.Cog):
             owner_id=msg.author.id,
             owner_name=msg.author.display_name,
             message=msg.content,
+            time=msg.created_at.strftime("%d.%m %H:%M"),
             reference=ref_ai,
         )
 
@@ -76,10 +116,6 @@ class MessageResponder(commands.Cog):
                     return True
 
         content_lower = message.content.lower().strip()
-        for punct in (",", ".", "!", "?", ";", ":"):
-            if content_lower.endswith(punct):
-                content_lower = content_lower[:-1]
-
         for name in self.BOT_NAMES:
             if content_lower.startswith(name):
                 return True

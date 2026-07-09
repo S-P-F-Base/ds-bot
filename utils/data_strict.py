@@ -7,6 +7,7 @@ class MessageAI:
     owner_id: int
     owner_name: str
     message: str
+    time: str
     reference: Optional["MessageAI"] = None
 
     def __repr__(self) -> str:
@@ -24,8 +25,9 @@ class MessageAI:
         lines = []
         for depth, node in enumerate(nodes):
             spaces = "  " * depth
-            lines.append(f"{spaces}-> {node.owner_name} (ID: {node.owner_id})")
-            lines.append(f"{spaces}   {node.message}")
+            lines.append(
+                f"{spaces}-> {node.owner_name}|ID:{node.owner_id}|{node.time}: {node.message}"
+            )
 
         return "\n".join(lines)
 
@@ -33,6 +35,7 @@ class MessageAI:
         data = {
             "owner_id": self.owner_id,
             "owner_name": self.owner_name,
+            "time": self.time,
             "message": self.message,
             "reference": None,
         }
