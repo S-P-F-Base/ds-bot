@@ -3,3 +3,6 @@ jinja2
 uvicorn
 httpx
 py-cord
+openai
+colorama
+dataset
