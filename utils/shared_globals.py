@@ -17,7 +17,7 @@ def init_clients():
 
 
 __all__ = [
-    "BOT_ROOT_DIR",
     "BOT_AI_CLIENT",
+    "BOT_ROOT_DIR",
     "init_clients",
 ]

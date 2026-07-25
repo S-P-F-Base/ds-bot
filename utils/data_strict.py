@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -8,7 +7,7 @@ class MessageAI:
     owner_name: str
     message: str
     time: str
-    reference: Optional["MessageAI"] = None
+    reference: "MessageAI | None" = None
 
     def __repr__(self) -> str:
         return self.format_tree()

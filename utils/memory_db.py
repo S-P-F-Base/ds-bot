@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
 
 import dataset
 
@@ -30,13 +29,13 @@ class MemoryDB:
         self.memories.create_column("created_at", self.db.types.datetime)
         self.memories.create_column("updated_at", self.db.types.datetime)
 
-    def get_user(self, user_id: int) -> Optional[Dict]:
+    def get_user(self, user_id: int) -> dict | None:
         row = self.users.find_one(user_id=user_id)
         return dict(row) if row else None
 
     def upsert_user(self, user_id: int, username: str):
         self.users.upsert(
-            {"user_id": user_id, "username": username, "last_seen": datetime.now()},
+            {"user_id": user_id, "username": username, "last_seen": datetime.now(UTC)},
             ["user_id"],
         )
 
@@ -58,24 +57,24 @@ class MemoryDB:
                 "user_id": user_id,
                 "text": text,
                 "importance": max(0, min(10, importance)),
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             }
         )
 
-    def search_memories(self, user_id: int, query: str, limit: int = 5) -> List[str]:
+    def search_memories(self, user_id: int, query: str, limit: int = 5) -> list[str]:
         rows = self.memories.find(
             user_id=user_id, text={"ilike": f"%{query}%"}, _limit=limit
         )
         return [row["text"] for row in rows]
 
-    def get_all_memories(self, user_id: int, limit: int = 10) -> List[str]:
+    def get_all_memories(self, user_id: int, limit: int = 10) -> list[str]:
         rows = self.memories.find(user_id=user_id, _limit=limit, order_by="-importance")
         return [row["text"] for row in rows]
 
     def delete_memory(self, memory_id: int):
         self.memories.delete(id=memory_id)
 
-    def get_memory_by_id(self, memory_id: int) -> Optional[Dict]:
+    def get_memory_by_id(self, memory_id: int) -> dict | None:
         row = self.memories.find_one(id=memory_id)
         return dict(row) if row else None
