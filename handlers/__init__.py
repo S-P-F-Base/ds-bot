@@ -27,10 +27,21 @@ async def get_ai_response(
 
     messages: list[Any] = [{"role": "system", "content": system_prompt}]
 
-    for msg in context:
-        messages.append({"role": "user", "content": repr(msg)})
+    def add_message_to_list(msg: MessageAI):
+        role = "assistant" if msg.is_bot else "user"
+        content = f"{msg.owner_name}: {msg.message}"
+        messages.append({"role": role, "content": content})
 
-    messages.append({"role": "user", "content": repr(invoke_message)})
+    for msg in context:
+        add_message_to_list(msg)
+
+    context_keys = {(m.owner_id, m.time, m.message) for m in context}
+    for msg in invoke_message.to_list():
+        key = (msg.owner_id, msg.time, msg.message)
+        if key in context_keys:
+            continue
+
+        add_message_to_list(msg)
 
     client = shared_globals.BOT_AI_CLIENT
     if client is None:

@@ -8,6 +8,7 @@ class MessageAI:
     message: str
     time: str
     reference: "MessageAI | None" = None
+    is_bot: bool = False
 
     def __repr__(self) -> str:
         return self.format_tree()
@@ -30,6 +31,16 @@ class MessageAI:
 
         return "\n".join(lines)
 
+    def to_list(self) -> list["MessageAI"]:
+        nodes = []
+        current = self
+        while current:
+            nodes.append(current)
+            current = current.reference
+
+        nodes.reverse()
+        return nodes
+
     def to_dict(self) -> dict:
         data = {
             "owner_id": self.owner_id,
@@ -37,6 +48,7 @@ class MessageAI:
             "time": self.time,
             "message": self.message,
             "reference": None,
+            "is_bot": self.is_bot,
         }
         if self.reference:
             data["reference"] = self.reference.to_dict()

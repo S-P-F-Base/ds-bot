@@ -64,6 +64,7 @@ class MessageResponder(commands.Cog):
                 message=msg.content,
                 time=msg.created_at.strftime("%d.%m %H:%M"),
                 reference=None,
+                is_bot=msg.author.bot,
             )
             messages.append(ai_msg)
             if len(messages) >= limit:
@@ -111,6 +112,7 @@ class MessageResponder(commands.Cog):
             message=msg.content,
             time=msg.created_at.strftime("%d.%m %H:%M"),
             reference=ref_ai,
+            is_bot=msg.author.bot,
         )
 
     def _is_valid_refetence(self, message: discord.Message) -> bool:
