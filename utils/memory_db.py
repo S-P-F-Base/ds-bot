@@ -19,7 +19,7 @@ class MemoryDB:
 
         self.memories = self.db.create_table("memories")
         self.memories.create_column(
-            "id", self.db.types.integer, primary=True, autoincrement=True
+            "id", self.db.types.integer, primary_key=True, autoincrement=True
         )
         self.memories.create_column("user_id", self.db.types.integer)
         self.memories.create_column("text", self.db.types.string)

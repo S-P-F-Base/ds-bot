@@ -31,6 +31,10 @@ class ColoredFormatter(logging.Formatter):
         for line in lines[1:]:
             result.append(" " * prefix_len + line)
 
+        if record.exc_info:
+            tb = self.formatException(record.exc_info)
+            result.append(tb)
+
         return "\n".join(result)
 
 

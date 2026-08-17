@@ -8,7 +8,7 @@ from utils import MessageAI, logger
 class MessageResponder(commands.Cog):
     BOT_NAMES = frozenset({"анна", "аня", "анечка", "аннушка", "анютка", "скайнет"})
     MAX_REFERENCE_DEPTH = 4
-    CONTEXT_LIMIT = 10
+    CONTEXT_LIMIT = 25
 
     def __init__(self, bot):
         self.bot = bot
@@ -22,6 +22,13 @@ class MessageResponder(commands.Cog):
             return
 
         if not isinstance(message.channel, discord.TextChannel):
+            return
+
+        if not message.author.id in [
+            571391859524501507,
+            725450256569073694,
+            456381306553499649,
+        ]:
             return
 
         user_msg = await self._build_message_ai(message, depth=0)
@@ -106,14 +113,20 @@ class MessageResponder(commands.Cog):
             reference=ref_ai,
         )
 
+    def _is_valid_refetence(self, message: discord.Message) -> bool:
+        return bool(
+            message.reference
+            and message.reference.resolved
+            and isinstance(message.reference.resolved, discord.Message)
+            and message.reference.resolved.author == self.bot.user
+        )
+
     def _is_addressed_to_bot(self, message: discord.Message) -> bool:
         if self.bot.user.mentioned_in(message):
             return True
 
-        if message.reference and message.reference.resolved:
-            if isinstance(message.reference.resolved, discord.Message):
-                if message.reference.resolved.author == self.bot.user:
-                    return True
+        if self._is_valid_refetence(message):
+            return True
 
         content_lower = message.content.lower().strip()
         for name in self.BOT_NAMES:
