@@ -106,7 +106,7 @@ async def get_ai_response(
             if content is None:
                 return "Пустой ответ от модели."
 
-            return content.strip()
+            return content.lstrip("Анна:").strip()  # noqa: B005
 
     except Exception as e:
         if "insufficient balance" in str(e).lower():

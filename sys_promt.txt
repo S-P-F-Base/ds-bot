@@ -1,3 +1,3 @@
-Messages are sent in the format: 'Name: text'. You should not reply in this format.
+Messages are sent in the format: 'Name: text'.
 
 The 'assistant' role indicates a message from the bot, and 'user' indicates a message from a user.
