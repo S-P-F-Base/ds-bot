@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any, cast
 
 from utils import (
@@ -10,12 +11,14 @@ from utils import (
     shared_globals,
 )
 
+MEM_PATTERN = re.compile(r"\[\s*MEM:\s*(.*?)\]", re.IGNORECASE)
+
 
 async def get_ai_response(
     invoke_message: MessageAI,
     context: list[MessageAI],
 ) -> str:
-    logger.debug(f"Запрос от {invoke_message.owner_id}")
+    logger.info(f"Запрос от {invoke_message.owner_id}")
 
     system_prompt = get_system_prompt()
 
@@ -26,6 +29,9 @@ async def get_ai_response(
     tool_manager = ToolManager(memory_tools)
 
     messages: list[Any] = [{"role": "system", "content": system_prompt}]
+    dynamic_context = await _build_dynamic_context(invoke_message)
+    if dynamic_context:
+        messages.append({"role": "system", "content": dynamic_context})
 
     def add_message_to_list(msg: MessageAI):
         role = "assistant" if msg.is_bot else "user"
@@ -46,7 +52,7 @@ async def get_ai_response(
     client = shared_globals.BOT_AI_CLIENT
     if client is None:
         logger.error("BOT_AI_CLIENT не инициализирован")
-        return "Ошибка: клиент ИИ не инициализирован."
+        return "Ошибка: ядро ИИ не инициализировано."
 
     tools_schema = cast(Any, tool_manager.get_tools_schema())
 
@@ -86,7 +92,7 @@ async def get_ai_response(
 
                     tool_name = function.name
                     arguments = json.loads(function.arguments)
-                    logger.debug(
+                    logger.info(
                         f"Вызов инструмента: {tool_name} с аргументами {arguments}"
                     )
 
@@ -106,6 +112,7 @@ async def get_ai_response(
             if content is None:
                 return "Пустой ответ от модели."
 
+            content = _extract_and_save_mem(content)
             return content.lstrip("Анна:").strip()  # noqa: B005
 
     except Exception as e:
@@ -114,3 +121,62 @@ async def get_ai_response(
 
         logger.exception("Ошибка при обращении к AI")
         return f"Произошла ошибка: {e}"
+
+
+def _extract_and_save_mem(text: str) -> str:
+    matches = list(MEM_PATTERN.finditer(text))
+    if not matches:
+        return text
+
+    for match in matches:
+        memory_text = match.group(1).strip()
+        if memory_text:
+            shared_globals.BOT_MEMORY_DB.add_global_memory(memory_text)
+            logger.info(f"Автосохранение из ответа Анны: {memory_text}")
+
+    return MEM_PATTERN.sub("", text).strip()
+
+
+async def _build_dynamic_context(invoke_message: MessageAI) -> str:
+    db = shared_globals.BOT_MEMORY_DB
+    user_id = invoke_message.owner_id
+    username = invoke_message.owner_name
+
+    parts = []
+
+    user = db.get_user(user_id)
+    if user is None:
+        db.upsert_user(user_id, username)
+        user = db.get_user(user_id)
+
+    score = 0
+    if user:
+        score = int(user.get("relationship_score") or 0)
+
+    if score >= 50:
+        desc = "очень близкий человек"
+    elif score >= 20:
+        desc = "симпатичен, нравится общаться"
+    elif score >= -10:
+        desc = "нейтрально, просто знакомый"
+    elif score >= -50:
+        desc = "раздражает, но терпимо"
+    else:
+        desc = "вызывает сильную неприязнь"
+
+    parts.append(f"Твоё текущее отношение к {username}: {desc} (score={score}).")
+
+    notes = db.get_user_notes(user_id, limit=3)
+    if notes:
+        parts.append(
+            "Твои заметки об этом пользователе:\n" + "\n".join(f"- {n}" for n in notes)
+        )
+
+    memories = db.get_all_global_memories(limit=5)
+    if memories:
+        parts.append(
+            "Твои последние глобальные воспоминания:\n"
+            + "\n".join(f"- {m}" for m in memories)
+        )
+
+    return "\n\n".join(parts)

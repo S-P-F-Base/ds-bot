@@ -6,9 +6,11 @@ from utils import MessageAI, logger
 
 
 class MessageResponder(commands.Cog):
-    BOT_NAMES = frozenset({"анна", "аня", "анечка", "аннушка", "анютка", "скайнет"})
-    MAX_REFERENCE_DEPTH = 4
-    CONTEXT_LIMIT = 25
+    BOT_NAMES = frozenset(
+        {"анна", "аня", "ань", "анечка", "аннушка", "анютка", "скайнет"}
+    )
+    MAX_REFERENCE_DEPTH = 5
+    CONTEXT_LIMIT = 35
 
     def __init__(self, bot):
         self.bot = bot
@@ -24,7 +26,7 @@ class MessageResponder(commands.Cog):
         if not isinstance(message.channel, discord.TextChannel):
             return
 
-        if not message.author.id in [
+        if message.author.id not in [
             571391859524501507,
             725450256569073694,
             456381306553499649,
