@@ -113,6 +113,7 @@ async def get_ai_response(
                 return "Пустой ответ от модели."
 
             content = _extract_and_save_mem(content)
+            content = _sanitize_text(content)
             return content.lstrip("Анна:").strip()  # noqa: B005
 
     except Exception as e:
@@ -180,3 +181,18 @@ async def _build_dynamic_context(invoke_message: MessageAI) -> str:
         )
 
     return "\n\n".join(parts)
+
+
+def _sanitize_text(text: str) -> str:
+    replacements = {
+        "«": '"',
+        "»": '"',
+        "„": '"',
+        "“": '"',
+        "—": "-",
+        "–": "-",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    return text

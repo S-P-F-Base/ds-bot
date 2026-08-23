@@ -11,32 +11,85 @@ class MessageResponder(commands.Cog):
     )
     MAX_REFERENCE_DEPTH = 5
     CONTEXT_LIMIT = 35
+    ALLOWED_USER_IDS = {
+        571391859524501507,
+        725450256569073694,
+        456381306553499649,
+    }
 
     def __init__(self, bot):
         self.bot = bot
 
+    def _is_author_allowed(self, user_id: int) -> bool:
+        return user_id in self.ALLOWED_USER_IDS
+
+    def _is_text_channel(self, channel) -> bool:
+        return isinstance(channel, discord.TextChannel)
+
+    def _check_common_conditions(self, message: discord.Message) -> bool:
+        return (
+            not message.author.bot
+            and self._is_text_channel(message.channel)
+            and self._is_author_allowed(message.author.id)
+        )
+
+    async def _delete_message(self, message: discord.Message):
+        try:
+            await message.delete()
+
+        except discord.Forbidden:
+            pass
+
+        except discord.HTTPException:
+            pass
+
+    @commands.command(name="inv")
+    async def inv_command(self, ctx):
+        if not self._check_common_conditions(ctx.message):
+            return
+
+        target_msg = await self._get_last_invokable_message(ctx.channel)
+        if target_msg is None:
+            return
+
+        await self._delete_message(ctx.message)
+        await self._process_message(target_msg)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
+        if not self._check_common_conditions(message):
             return
 
         if not self._is_addressed_to_bot(message):
             return
 
-        if not isinstance(message.channel, discord.TextChannel):
-            return
+        await self._process_message(message)
 
-        if message.author.id not in [
-            571391859524501507,
-            725450256569073694,
-            456381306553499649,
-        ]:
-            return
+    async def _get_last_invokable_message(
+        self, channel: discord.TextChannel
+    ) -> discord.Message | None:
+        async for msg in channel.history(limit=10):
+            if msg.author.bot:
+                continue
 
-        user_msg = await self._build_message_ai(message, depth=0)
+            if msg.content.strip().lower() == "!inv":
+                continue
+
+            return msg
+
+        return None
+
+    async def _process_message(
+        self,
+        message: discord.Message,
+        content_override: str | None = None,
+    ):
+        user_msg = await self._build_message_ai(
+            message, depth=0, content_override=content_override
+        )
 
         context = await self._get_channel_context(
-            channel=message.channel,
+            channel=message.channel,  # type: ignore
             exclude_message_id=message.id,
             limit=self.CONTEXT_LIMIT,
         )
@@ -75,7 +128,12 @@ class MessageResponder(commands.Cog):
         messages.reverse()
         return messages
 
-    async def _build_message_ai(self, msg: discord.Message, depth: int) -> MessageAI:
+    async def _build_message_ai(
+        self,
+        msg: discord.Message,
+        depth: int,
+        content_override: str | None = None,
+    ) -> MessageAI:
         if depth >= self.MAX_REFERENCE_DEPTH:
             return MessageAI(
                 owner_id=0,
@@ -84,6 +142,8 @@ class MessageResponder(commands.Cog):
                 time=msg.created_at.strftime("%d.%m %H:%M"),
                 reference=None,
             )
+
+        content = content_override if content_override is not None else msg.content
 
         reference_msg = None
         if msg.reference:
@@ -111,7 +171,7 @@ class MessageResponder(commands.Cog):
         return MessageAI(
             owner_id=msg.author.id,
             owner_name=msg.author.display_name,
-            message=msg.content,
+            message=content,
             time=msg.created_at.strftime("%d.%m %H:%M"),
             reference=ref_ai,
             is_bot=msg.author.bot,
