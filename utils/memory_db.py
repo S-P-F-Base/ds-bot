@@ -150,9 +150,14 @@ class MemoryDB:
             }
         )
 
-    def get_user_notes(self, user_id: int, limit: int = 5) -> list[str]:
+    def get_user_notes(self, user_id: int, limit: int = 5) -> list[dict]:
         rows = self.user_notes.find(user_id=user_id, _limit=limit, order_by="-id")
-        return [row["text"] for row in rows]
+        return [{"id": row["id"], "text": row["text"]} for row in rows]
+
+    def delete_user_note_by_text(self, user_id: int, text: str):
+        rows = self.user_notes.find(user_id=user_id, text=text)
+        for row in rows:
+            self.user_notes.delete(id=row["id"])
 
     def delete_user_note_by_id(self, note_id: int):
         self.user_notes.delete(id=note_id)

@@ -182,26 +182,41 @@ class MemoryTools:
 
     @tool(
         name="get_user_notes",
-        description="Получить список заметок о текущем пользователе.",
+        description="Получить список заметок о текущем пользователе с их ID.",
     )
     async def get_user_notes(self, limit: int = 5) -> str:
-        """Получить заметки о пользователе.
+        """Получить заметки о пользователе с ID.
 
         :param limit: Максимальное количество (по умолчанию 5)
         """
         notes = shared_globals.BOT_MEMORY_DB.get_user_notes(self.user_id, limit)
         if not notes:
             return "Заметок о пользователе пока нет."
-        return "\n".join(f"- {note}" for note in notes)
+
+        lines = []
+        for note in notes:
+            lines.append(f"ID: {note['id']} - {note['text']}")
+
+        return "\n".join(lines)
 
     @tool(
         name="delete_user_note",
-        description="Удалить заметку о пользователе по ID.",
+        description="Удалить заметку о пользователе по ID или точному тексту.",
     )
-    async def delete_user_note(self, note_id: int) -> str:
+    async def delete_user_note(self, note_id: int = 0, text: str = "") -> str:
         """Удалить заметку о пользователе.
 
-        :param note_id: ID заметки
+        :param note_id: ID заметки (если указан, удалит по ID)
+        :param text: Текст заметки (если указан, удалит все заметки с таким текстом)
         """
-        shared_globals.BOT_MEMORY_DB.delete_user_note_by_id(note_id)
-        return "Заметка удалена."
+        db = shared_globals.BOT_MEMORY_DB
+        if note_id:
+            db.delete_user_note_by_id(note_id)
+            return f"Удалена заметка с ID {note_id}"
+
+        elif text:
+            db.delete_user_note_by_text(self.user_id, text.strip())
+            return f"Удалены все заметки с текстом: {text.strip()}"
+
+        else:
+            return "Укажите ID или текст заметки для удаления."
